@@ -1,5 +1,9 @@
 #!/usr/local/bin/python3
 
+# Next:
+# - sort lines of output in order of increasing totals (currently it is random)
+# - average monthly expenses per category
+# - add option to generate output in csv format
 import sys
 
 if len(sys.argv) < 2:
@@ -51,7 +55,7 @@ def extract_fields(line):
         dividend = 10.0
         while line[i] != field_separator:
             value += (ord(line[i]) - ord('0')) / dividend
-            dividend /= 10
+            dividend *= 10
             i += 1
 
     i += 1 # get past the comma    
