@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3
 
 # Next:
+# - values which are bigger than zero less than one appear as "0"
 # - sort lines of output in order of increasing totals (currently it is random)
 # - average monthly expenses per tag
 # - add option to generate output in csv format
@@ -29,9 +30,22 @@ def extract_fields(line):
     Value is a simple floating point:
       `[0-9]*` optionally followed by `decimal_separator` and
       `[0-9]*`. 
-    Finally, comment is a string with some occurrences of `#[^# ]+`.'''
+    Finally, comment is a string with some occurrences of `#[^# ]+`.
 
-    line = line.strip()
+    Examples
+    ========
+
+    extract_fields("12,25,30.45, #food #feast xmas turkey")
+      # --> [12, 30.45, ['food', 'feast']]
+    extract_fields("01,04,300, #rent") 
+      # --> [01, 300, ['rent']]
+    extract_fields("13,04,20, #magic") 
+      # no checks on weird month values...--> [13, 20, ['magic']] 
+    extract_fields("10,10,-20, #breaks") 
+      # RRRooAAARRrrr! this breaks, on income as expenses!
+    '''
+
+    line = line.rstrip()
     i = 0
     month = 0
     while line[i] != field_separator:
@@ -62,7 +76,8 @@ def extract_fields(line):
 
     i += 1 # get past the field_separator    
 
-    # obtain the tags
+    # obtain the tags (eg: food, transport.
+    # They appear as `#food #transport#another`)
     tags = []
     l = len(line)
     while i < l:
@@ -81,7 +96,7 @@ def extract_fields(line):
 
 # When we process a file, which we'll assume is called `filename`, we
 # build two dictionaries. One for the monthly totals, and one of the
-# monthly-categories.
+# tag-totals.
 
 fin = open(filename,'r')
 
@@ -99,6 +114,12 @@ for line in fin:
     if not tags:
         print('! warning (line %d): no tags found).' % line_counter)
 
+    # For each tag, keep a dictionary: keys are months, value is the
+    # total expense of the tag in the month. We do essentially
+    #
+    #     for tag in tags:
+    #         tag_totals[tag][month] += value
+    #
     for tag in tags:
         aux = tag_totals.get(tag,dict())
         aux[month] = aux.get(month,0.0) + value
@@ -110,6 +131,19 @@ for line in fin:
 fin.close()
 
 # print results ############################################
+#
+# Example table:
+#
+#              months  jun  jul  aug      total      avg
+#     --------------------------------------------------
+#           transport   50   50   50   |    150  |    50
+#              stamps    0             |      0  |
+#                food   72   83   81   |    235  |    78
+#                gift        19        |     19  |     6
+#              outing        40        |     40  |    33
+#     --------------------------------------------------
+#              totals  112  164  113
+
 month_values = monthly_totals.keys()
 
 max_tag_width = 15
@@ -123,7 +157,8 @@ for month in sorted(month_values):
     print (("%" + str(month_col_width) + "s ") % month_names[month -1], end='')
 
 print(('%' + str(tag_tot_width + 5) + 's%' + str(month_col_width + 5) + 's') % ("total", "avg"), end='\n')
-print('-' * (max_tag_width + len(month_values)*(month_col_width + 1) +1 + tag_tot_width + 5 + month_col_width + 5), end='\n')
+dash_line_length = max_tag_width + len(month_values)*(month_col_width + 1) +1 + tag_tot_width + 5 + month_col_width + 5
+print('-' * dash_line_length, end='\n')
 
 for tag in tag_totals.keys():
     print (("%" + str(max_tag_width) + "s ") % (tag),end='')
@@ -141,8 +176,7 @@ for tag in tag_totals.keys():
     else:
         print('  |\n',end='')
 
-print('-' * (max_tag_width + len(month_values)*(month_col_width + 1) +1 + tag_tot_width + 5 + month_col_width + 5), end='\n')
-#print('-' * (max_tag_width + len(month_values)*(month_col_width + 1)), end='\n')
+print('-' * dash_line_length, end='\n')
 
 print(("%" + str(max_tag_width) + "s ") % ('totals'),end='')
 for month in sorted(month_values):
