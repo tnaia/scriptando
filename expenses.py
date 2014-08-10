@@ -2,7 +2,7 @@
 
 # Next:
 # - sort lines of output in order of increasing totals (currently it is random)
-# - average monthly expenses per category
+# - average monthly expenses per tag
 # - add option to generate output in csv format
 import sys
 
@@ -18,16 +18,18 @@ field_separator = ','
 decimal_separator = '.'
 
 def extract_fields(line):
-    '''Extract fields, assuning a well-formed line.
+    '''Extract fields, assuming a well-formed line.
 
     The line would be 
 
-        dd,dd,value,comment
+        mm,dd,value,comment
 
-    where `d` means a digit `[0-9]`, value is a simple floating point,
-    `[0-9]*` optionally followed by `decimal_separator` and
-    `[0-9]*`. Finall, comment is a string with some occurrences of
-    `#[^# ]+`.'''
+    where `mm` and `dd` are a month and day number, respectively:
+    two `[0-9]` digits each. 
+    Value is a simple floating point:
+      `[0-9]*` optionally followed by `decimal_separator` and
+      `[0-9]*`. 
+    Finally, comment is a string with some occurrences of `#[^# ]+`.'''
 
     line = line.strip()
     i = 0
@@ -36,13 +38,13 @@ def extract_fields(line):
         month = month * 10 + ord(line[i]) - ord('0')
         i += 1
 
-    i += 1 # get past the comma
+    i += 1 # get past the field_separator
 
     # get past the day field
     while line[i] != field_separator:
         i += 1
 
-    i += 1 # get past the comma
+    i += 1 # get past the field_separator
 
     # obtain the value
     value = 0.0
@@ -51,14 +53,14 @@ def extract_fields(line):
         i += 1
 
     if line[i] == decimal_separator:
-        i += 1
+        i += 1 # get past the decimal_separator    
         dividend = 10.0
         while line[i] != field_separator:
             value += (ord(line[i]) - ord('0')) / dividend
             dividend *= 10
             i += 1
 
-    i += 1 # get past the comma    
+    i += 1 # get past the field_separator    
 
     # obtain the tags
     tags = []
@@ -84,13 +86,13 @@ def extract_fields(line):
 fin = open(filename,'r')
 
 monthly_totals = dict()
-category_totals = dict()
+tag_totals = dict()
 
 line_counter = 0
 for line in fin:
     line_counter += 1
 
-#    print(monthly_totals,category_totals)
+#    print(monthly_totals,tag_totals)
     month, value, tags = extract_fields(line)
 #     print(month, value, tags)
     monthly_totals[ month ] = monthly_totals.get(month,0.0) + value
@@ -98,45 +100,51 @@ for line in fin:
         print('! warning (line %d): no tags found).' % line_counter)
 
     for tag in tags:
-        aux = category_totals.get(tag,dict())
+        aux = tag_totals.get(tag,dict())
         aux[month] = aux.get(month,0.0) + value
-        category_totals[tag] = aux
+        tag_totals[tag] = aux
 
 # print(monthly_totals)
-# print(category_totals)
+# print(tag_totals)
 
 fin.close()
 
 # print results ############################################
 month_values = monthly_totals.keys()
 
-max_category_width = 15
+max_tag_width = 15
 month_col_width = 4 # does not count the space between each column and the next
+tag_tot_width = 5
 
-print (("%" + str(max_category_width) + "s ") % ('months'),end='')
+print (("%" + str(max_tag_width) + "s ") % ('months'),end='')
 
 month_names = [ 'jan', 'fev', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec' ]
 for month in sorted(month_values):
     print (("%" + str(month_col_width) + "s ") % month_names[month -1], end='')
 
+print(('%' + str(tag_tot_width + 5) + 's%' + str(month_col_width + 5) + 's') % ("total", "avg"), end='\n')
+print('-' * (max_tag_width + len(month_values)*(month_col_width + 1) +1 + tag_tot_width + 5 + month_col_width + 5), end='\n')
 
-print( '\n' + '-' * (max_category_width + len(month_values)*(month_col_width + 1)), end='\n')
-
-for category in category_totals.keys():
-    print (("%" + str(max_category_width) + "s ") % (category),end='')
-    mtot = 0.0
+for tag in tag_totals.keys():
+    print (("%" + str(max_tag_width) + "s ") % (tag),end='')
+    curr_tag_total = 0.0
     for month in sorted(month_values):
-        v = category_totals[category].get(month,0)
+        v = tag_totals[tag].get(month,0)
         if v > 0:
             print (("%" + str(month_col_width) + ".0f ") % (v), end='')
-            mtot += v
+            curr_tag_total += v
         else:
             print( " " * (month_col_width + 1),end='')
-    print((" --> %" + str(month_col_width) + ".0f\n") % mtot,end='')
+    print(("  |  %" + str(tag_tot_width) + ".0f") % (curr_tag_total),end='')
+    if curr_tag_total/len(month_values) >= 1:
+        print(("  |  %" + str(month_col_width) + ".0f\n") % (curr_tag_total/len(month_values)),end='')        
+    else:
+        print('  |\n',end='')
 
-print('-' * (max_category_width + len(month_values)*(month_col_width + 1)), end='\n')
+print('-' * (max_tag_width + len(month_values)*(month_col_width + 1) +1 + tag_tot_width + 5 + month_col_width + 5), end='\n')
+#print('-' * (max_tag_width + len(month_values)*(month_col_width + 1)), end='\n')
 
-print(("%" + str(max_category_width) + "s ") % ('totals'),end='')
+print(("%" + str(max_tag_width) + "s ") % ('totals'),end='')
 for month in sorted(month_values):
     print (("%" + str(month_col_width) + ".0f ") % (monthly_totals[month]), end='')
     
