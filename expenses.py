@@ -1,10 +1,16 @@
 #!/usr/local/bin/python3
 
+# Updates
+# 11/oct/2014: do not print entries whose value is < 1
+#
 # Next:
-# - values which are bigger than zero less than one appear as "0"
 # - sort lines of output in order of increasing totals (currently it is random)
 # - average monthly expenses per tag
 # - add option to generate output in csv format
+#
+# Nice to have:
+#
+
 import sys
 
 if len(sys.argv) < 2:
@@ -132,12 +138,13 @@ fin.close()
 
 # print results ############################################
 #
+# Note that zero values are not printed.
 # Example table:
 #
 #              months  jun  jul  aug      total      avg
 #     --------------------------------------------------
 #           transport   50   50   50   |    150  |    50
-#              stamps    0             |      0  |
+#              stamps                  |         |
 #                food   72   83   81   |    235  |    78
 #                gift        19        |     19  |     6
 #              outing        40        |     40  |    33
@@ -165,12 +172,15 @@ for tag in tag_totals.keys():
     curr_tag_total = 0.0
     for month in sorted(month_values):
         v = tag_totals[tag].get(month,0)
-        if v > 0:
+        if v >= 1:
             print (("%" + str(month_col_width) + ".0f ") % (v), end='')
             curr_tag_total += v
         else:
             print( " " * (month_col_width + 1),end='')
-    print(("  |  %" + str(tag_tot_width) + ".0f") % (curr_tag_total),end='')
+    if curr_tag_total >= 1:
+        print(("  |  %" + str(tag_tot_width) + ".0f") % (curr_tag_total),end='')
+    else:
+        print("  |  " + (" " * tag_tot_width),end='')
     if curr_tag_total/len(month_values) >= 1:
         print(("  |  %" + str(month_col_width) + ".0f\n") % (curr_tag_total/len(month_values)),end='')        
     else:
