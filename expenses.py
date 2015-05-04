@@ -21,7 +21,7 @@ if len(sys.argv) < 2:
 filename = sys.argv[-1]
 
 # Este é um programa para processar nossas despesas.
-field_separator = ','
+field_separator = ';'
 decimal_separator = '.'
 
 def extract_fields(line):
@@ -51,52 +51,55 @@ def extract_fields(line):
       # RRRooAAARRrrr! this breaks, on income as expenses!
     '''
 
-    line = line.rstrip()
-    i = 0
-    month = 0
-    while line[i] != field_separator:
-        month = month * 10 + ord(line[i]) - ord('0')
-        i += 1
-
-    i += 1 # get past the field_separator
-
-    # get past the day field
-    while line[i] != field_separator:
-        i += 1
-
-    i += 1 # get past the field_separator
-
-    # obtain the value
-    value = 0.0
-    while line[i] != field_separator and line[i] != decimal_separator:
-        value = 10 * value + ord(line[i]) - ord('0')
-        i += 1
-
-    if line[i] == decimal_separator:
-        i += 1 # get past the decimal_separator    
-        dividend = 10.0
+    try:
+        line = line.rstrip()
+        i = 0
+        month = 0
         while line[i] != field_separator:
-            value += (ord(line[i]) - ord('0')) / dividend
-            dividend *= 10
+            month = month * 10 + ord(line[i]) - ord('0')
+            i += 1
+            
+        i += 1 # get past the field_separator
+            
+        # get past the day field
+        while line[i] != field_separator:
             i += 1
 
-    i += 1 # get past the field_separator    
-
-    # obtain the tags (eg: food, transport.
-    # They appear as `#food #transport#another`)
-    tags = []
-    l = len(line)
-    while i < l:
-        if line[i] == '#':
-            j = i+1
-            while j < l and line[j] != '#' and line[j] != ' ':
-                j += 1
-            tags += [line[i+1:j]]
-            i = j
-        else:
+        i += 1 # get past the field_separator
+        
+        # obtain the value
+        value = 0.0
+        while line[i] != field_separator and line[i] != decimal_separator:
+            value = 10 * value + ord(line[i]) - ord('0')
             i += 1
 
+        if line[i] == decimal_separator:
+            i += 1 # get past the decimal_separator    
+            dividend = 10.0
+            while line[i] != field_separator:
+                value += (ord(line[i]) - ord('0')) / dividend
+                dividend *= 10
+                i += 1
+
+        i += 1 # get past the field_separator    
+
+        # obtain the tags (eg: food, transport.
+        # They appear as `#food #transport#another`)
+        tags = []
+        l = len(line)
+        while i < l:
+            if line[i] == '#':
+                j = i+1
+                while j < l and line[j] != '#' and line[j] != ' ':
+                    j += 1
+                tags += [line[i+1:j]]
+                i = j
+            else:
+                i += 1
+    except IndexError:
+        print("!!! Error while parsing line: %s" % line)
     # assemble result
+    ###print("--> assembled triple:", [month,value,tags])
     return [month,value,tags]
 
 
@@ -114,6 +117,7 @@ for line in fin:
     line_counter += 1
 
 #    print(monthly_totals,tag_totals)
+    ###print("line %d " % line_counter,end='')
     month, value, tags = extract_fields(line)
 #     print(month, value, tags)
     monthly_totals[ month ] = monthly_totals.get(month,0.0) + value
@@ -157,7 +161,7 @@ max_tag_width = 15
 month_col_width = 4 # does not count the space between each column and the next
 tag_tot_width = 5
 
-print (("%" + str(max_tag_width) + "s ") % ('months'),end='')
+print (("%" + str(max_tag_width) + "s ") % ('months'), end='')
 
 month_names = [ 'jan', 'fev', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec' ]
 for month in sorted(month_values):
