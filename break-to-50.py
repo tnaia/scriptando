@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Breaks lines longer than 50 characters,
-# except those starting by a '>' (greater sign).
+# **except** those starting by a '>' (greater sign).
 #
 # Copyright 2016 Tássio Naia
 #
@@ -27,5 +27,5 @@ for line in fin:
             index += max_len
         if index < line_len:
             print(l[index:])
-    
+
 fin.close()
