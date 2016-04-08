@@ -13,7 +13,7 @@ import sys
 filename = sys.argv[-1]
 fin = open(filename)
 
-max_len = 5
+max_len = 50
 
 for line in fin:
     l = line.rstrip()
