@@ -100,7 +100,7 @@ def extract_fields(line):
         print("!!! Error while parsing line: %s" % line)
     # assemble result
     ###print("--> assembled triple:", [month,value,tags])
-    return [month,value,tags]
+    return [month,value,list(set(tags))] # list(set(x)) eliminates duplicated tags
 
 
 # When we process a file, which we'll assume is called `filename`, we
@@ -193,10 +193,13 @@ for tag in tag_totals.keys():
 print('-' * dash_line_length, end='\n')
 
 print(("%" + str(max_tag_width) + "s ") % ('totals'),end='')
+grand_total = 0
 for month in sorted(month_values):
     print (("%" + str(month_col_width) + ".0f ") % (monthly_totals[month]), end='')
+    grand_total += monthly_totals[month]
+
     
-print('\n',end='')
+print((' ' * (month_col_width + 11) + '%.0f\n') % (grand_total/len(month_values)),end='')
 
 # Tests ####################################################
 

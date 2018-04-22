@@ -24,6 +24,7 @@ version="0.5"
 
 from os import listdir
 from os.path import isfile, join
+import os
 import re
 import sys
 
@@ -46,16 +47,23 @@ if len(sys.argv) != 2:
     
 mypath = sys.argv[1]
 print("// mypath is", mypath)
-      
-texfiles = [f for f in listdir(mypath) if isfile(join(mypath, f)) and f[-4:] == '.tex']
+
+work_dir = os.getcwd()
+wd_len = len(work_dir)
+texfiles = [(dp,f) for dp, dn, fn in os.walk(os.path.expanduser(mypath))
+       for f in fn if ('/.git/' not in os.path.join(dp,f) and f[-4:]=='.tex')]
+
+#  [os.path.join(dp, f) for dp, dn, fn in os.walk(os.path.expanduser("~/work/visconde/")) for f in fn if ('/.git/' not in os.path.join(dp,f) and )]
+
 
 print("digraph texinclusion{")
-for f in texfiles:
-    fin = open(join(mypath,f))
+for (dp,f) in texfiles:
+    fin = open(os.path.join(dp,f))
     f_clean = f.replace('"','\\"')
+    dp_clean = dp[wd_len:]
     for linum,l in enumerate(fin):
         m = includes_file(l)
         if m:
             included_file = m.group(2)
-            print ('    %40s -> "%s" [label="%d"]; // %s' % ('"'+f_clean+'"', included_file, linum, m.group(0)))
+            print ('    %40s -> "%s" [label="%d"]; // %s' % ('"'+os.path.join(dp,f_clean)+'"', os.path.join(dp,included_file), linum, m.group(0)))
 print("}")
